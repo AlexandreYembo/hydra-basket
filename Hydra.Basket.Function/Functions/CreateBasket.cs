@@ -16,6 +16,9 @@ namespace Hydra.Basket.Function
 {
     public class CreateBasket
     {
+        private const string AUTH_HEADER_NAME = "Authorization";
+        private const string BEARER_PREFIX = "Bearer ";
+
         private readonly MongoClient _mongoClient;
         public readonly ILogger _logger;
         private readonly IConfiguration _config;
@@ -41,6 +44,15 @@ namespace Hydra.Basket.Function
             [SignalR(HubName="basket")] IAsyncCollector<SignalRMessage> signalRMessage)
         {
             IActionResult returnValue = null;
+
+            string token = "";
+
+            if (req.Headers.ContainsKey(AUTH_HEADER_NAME) && 
+               req.Headers[AUTH_HEADER_NAME].ToString().StartsWith(BEARER_PREFIX))
+            {
+                   token = req.Headers["Authorization"].ToString().Substring(BEARER_PREFIX.Length);
+            }
+
 
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
@@ -70,7 +82,8 @@ namespace Hydra.Basket.Function
                 await signalRMessage.AddAsync(
                                     new SignalRMessage {
                                             Target = "basket",
-                                        //    UserId = basket.UserId.ToString(),
+                                          //  UserId = token,
+                                            UserId = basket.UserId.ToString(),
                                             Arguments = new[] { JsonConvert.SerializeObject(basket) }
                                     });
 

@@ -14,7 +14,7 @@ using Newtonsoft.Json;
 
 namespace Hydra.Basket.Function.Functions
 {
-    public class UpdateBasket
+    public class UpdateBasketFn
     {
         private readonly MongoClient _mongoClient;
         public readonly ILogger _logger;
@@ -22,9 +22,9 @@ namespace Hydra.Basket.Function.Functions
 
          public readonly IMongoCollection<Models.Basket> _collection;
 
-        public UpdateBasket(
+        public UpdateBasketFn(
             MongoClient mongoClient,
-            ILogger<UpdateBasket> logger,
+            ILogger<UpdateBasketFn> logger,
             IConfiguration config)
         {
             _mongoClient = mongoClient;
@@ -36,12 +36,11 @@ namespace Hydra.Basket.Function.Functions
         }
 
         [FunctionName("UpdateBasket")]
-        public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "put")] HttpRequest req,
-            [SignalR(HubName="basket")] IAsyncCollector<SignalRMessage> signalRMessage)
+        public async Task<IActionResult> UpdateBasket(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route= nameof(UpdateBasket) + "/{userId}")] HttpRequest req,
+            [SignalR(HubName="basket")] IAsyncCollector<SignalRMessage> signalRMessage,
+            string userId)
         {
-            IActionResult returnValue = null;
-
             string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
             var input = JsonConvert.DeserializeObject<Models.Basket>(requestBody);
@@ -55,35 +54,37 @@ namespace Hydra.Basket.Function.Functions
             var basket = new Models.Basket
             {
                 Id = input.Id,
-                UserId = input.UserId,
                 Created = DateTime.Now,
                 IsActive = input.IsActive,
-                Items = input.Items
+                Items = input.Items,
+                UserId = Guid.Parse(userId)
             };
 
             basket.UpdateTotal();
 
             try
             {
-               _collection.ReplaceOne(s => s.UserId == input.UserId && s.Id == input.Id, basket);
+               _collection.ReplaceOne(s => s.UserId == Guid.Parse(userId) && s.Id == input.Id, basket);
 
-                await signalRMessage.AddAsync(
+               await signalRMessage.AddAsync(
                                     new SignalRMessage {
                                             Target = "basket",
-                                        //    UserId = basket.UserId.ToString(),
+                                            UserId = userId,
                                             Arguments = new[] { JsonConvert.SerializeObject(basket) }
                                     });
-
-                returnValue = new OkObjectResult(basket);
+            return new OkResult();
+             //returnValue = new OkObjectResult(basket);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Exception thrown: {ex.Message}");
-                returnValue = new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                //returnValue = new StatusCodeResult(StatusCodes.Status500InternalServerError);
+                 
             }
 
 
-            return returnValue;
+          //  return returnValue;
         }
     }
 }

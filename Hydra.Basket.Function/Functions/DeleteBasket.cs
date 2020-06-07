@@ -50,7 +50,7 @@ namespace Hydra.Basket.Function.Functions
                 await signalRMessage.AddAsync(
                                     new SignalRMessage {
                                             Target = "basket",
-                                        //    UserId = basket.UserId.ToString(),
+                                            UserId = userId.ToString(),
                                             Arguments = new[] { JsonConvert.SerializeObject(null) }
                                     });
 
