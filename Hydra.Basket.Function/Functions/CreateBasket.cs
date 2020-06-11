@@ -2,101 +2,72 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using Hydra.Basket.Function.Authentication;
+using Hydra.Basket.Function.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using MongoDB.Driver;
 using Newtonsoft.Json;
 
 namespace Hydra.Basket.Function
 {
     public class CreateBasket
     {
-        private const string AUTH_HEADER_NAME = "Authorization";
-        private const string BEARER_PREFIX = "Bearer ";
-
-        private readonly MongoClient _mongoClient;
         public readonly ILogger _logger;
-        private readonly IConfiguration _config;
 
-         public readonly IMongoCollection<Models.Basket> _collection;
+        private readonly IMongoBase _mongoBase;
 
-        public CreateBasket(
-            MongoClient mongoClient,
-            ILogger<CreateBasket> logger,
-            IConfiguration config)
-        {
-            _mongoClient = mongoClient;
+        private readonly IWebJobAuthorizeHelper _authorize;
+        public CreateBasket(IMongoBase mongoBase, ILogger<CreateBasket> logger, IWebJobAuthorizeHelper authorize){
+            _mongoBase = mongoBase;
             _logger = logger;
-            _config = config;
-
-            var database = _mongoClient.GetDatabase("HydraBasket");
-            _collection = database.GetCollection<Models.Basket>("Basket");
+            _authorize = authorize;
         }
 
         [FunctionName("CreateBasket")]
-        public async Task<IActionResult> Run(
+        public async Task<IActionResult> Create(
             [HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest req,
             [SignalR(HubName="basket")] IAsyncCollector<SignalRMessage> signalRMessage)
         {
-            IActionResult returnValue = null;
+            return await this.TryCatch(async() => { 
+                    string userId = _authorize.GetUserId(req);
 
-            string token = "";
+                    string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
 
-            if (req.Headers.ContainsKey(AUTH_HEADER_NAME) && 
-               req.Headers[AUTH_HEADER_NAME].ToString().StartsWith(BEARER_PREFIX))
-            {
-                   token = req.Headers["Authorization"].ToString().Substring(BEARER_PREFIX.Length);
+                    var input = JsonConvert.DeserializeObject<Models.Basket>(requestBody);
+
+                    List<Models.BrokerRules> invalids = input.Valid();
+
+                    if( invalids.Count > 0){
+                        return new BadRequestObjectResult(JsonConvert.SerializeObject(invalids));
+                    }
+
+                    var basket = new Models.Basket
+                        {
+                            Id = input.Id,
+                            UserId = Guid.Parse(userId),
+                            Created = DateTime.Now,
+                            IsActive = input.IsActive,
+                            Items = input.Items
+                        };
+
+                    basket.UpdateTotal();
+
+                    _mongoBase.Insert(basket);
+
+                    await signalRMessage.AddAsync(
+                        new SignalRMessage {
+                                                Target = "basket",
+                                                UserId = userId,
+                                                Arguments = new[] { JsonConvert.SerializeObject(basket) }
+                                            });
+
+                    return new OkObjectResult(JsonConvert.SerializeObject(basket));
             }
-
-
-            string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-
-            var input = JsonConvert.DeserializeObject<Models.Basket>(requestBody);
-
-            List<Models.BrokerRules> invalids = input.Valid();
-
-            if( invalids.Count > 0){
-                return new BadRequestObjectResult(JsonConvert.SerializeObject(invalids));
-            }
-
-            var basket = new Models.Basket
-            {
-                Id = input.Id,
-                UserId = input.UserId,
-                Created = DateTime.Now,
-                IsActive = input.IsActive,
-                Items = input.Items
-            };
-
-            basket.UpdateTotal();
-
-            try
-            {
-               _collection.InsertOne(basket);
-
-                await signalRMessage.AddAsync(
-                                    new SignalRMessage {
-                                            Target = "basket",
-                                          //  UserId = token,
-                                            UserId = basket.UserId.ToString(),
-                                            Arguments = new[] { JsonConvert.SerializeObject(basket) }
-                                    });
-
-                returnValue = new OkObjectResult(JsonConvert.SerializeObject(basket));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Exception thrown: {ex.Message}");
-                returnValue = new StatusCodeResult(StatusCodes.Status500InternalServerError);
-            }
-
-
-            return returnValue;
+            , _logger);
         }
     }
 }

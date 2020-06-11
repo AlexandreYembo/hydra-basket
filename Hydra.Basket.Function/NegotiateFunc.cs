@@ -21,10 +21,7 @@ namespace Hydra.Basket.Function
             if (req.Headers.ContainsKey(AUTH_HEADER_NAME) && req.Headers[AUTH_HEADER_NAME].ToString().StartsWith(BEARER_PREFIX))
             {
                 string token = req.Headers["Authorization"].ToString().Substring(BEARER_PREFIX.Length);
-
-                var jwtClaim = JwtToken.GetClaim(token);
-                string userId = jwtClaim.Where(w => w.Type == "sub").FirstOrDefault().Value;
-                var connectionInfo = binder.Bind<SignalRConnectionInfo>(new SignalRConnectionInfoAttribute{HubName = "basket", UserId = userId});
+                var connectionInfo = binder.Bind<SignalRConnectionInfo>(new SignalRConnectionInfoAttribute{HubName = "basket", UserId = JwtToken.GetUserId(token)});
                 return connectionInfo;
             }
             log.LogError("Cannot connect to the Hub. Invalid access Token");

@@ -1,69 +1,48 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
+using Hydra.Basket.Function.Authentication;
+using Hydra.Basket.Function.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using MongoDB.Driver;
 using Newtonsoft.Json;
 
 namespace Hydra.Basket.Function.Functions
 {
     public class DeleteBasket
     {
-      private readonly MongoClient _mongoClient;
         public readonly ILogger _logger;
-        private readonly IConfiguration _config;
 
-         public readonly IMongoCollection<Models.Basket> _collection;
+        private readonly IMongoBase _mongoBase;
 
-        public DeleteBasket(
-            MongoClient mongoClient,
-            ILogger<DeleteBasket> logger,
-            IConfiguration config)
-        {
-            _mongoClient = mongoClient;
+        private readonly IWebJobAuthorizeHelper _authorize;
+        public DeleteBasket(IMongoBase mongoBase, ILogger<DeleteBasket> logger, IWebJobAuthorizeHelper authorize){
+            _mongoBase = mongoBase;
             _logger = logger;
-            _config = config;
-
-            var database = _mongoClient.GetDatabase("HydraBasket");
-            _collection = database.GetCollection<Models.Basket>("Basket");
+            _authorize = authorize;
         }
 
         [FunctionName("DeleteBasket")]
-        public async Task<IActionResult> Run(
+        public async Task<IActionResult> Delete(
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete")] HttpRequest req,
             [SignalR(HubName="basket")] IAsyncCollector<SignalRMessage> signalRMessage)
         {
-            IActionResult returnValue = null;
-            Guid userId = Guid.Parse(req.QueryString.Value.Replace("?UserId=", "")); // TODO
+            return await this.TryCatch(async () => {
+                    string userId = _authorize.GetUserId(req);
+                    _mongoBase.Delete(Guid.Parse(userId));
 
-            try
-            {
-               _collection.DeleteOne(s => s.UserId == userId);
-
-                await signalRMessage.AddAsync(
+                    await signalRMessage.AddAsync(
                                     new SignalRMessage {
-                                            Target = "basket",
-                                            UserId = userId.ToString(),
-                                            Arguments = new[] { JsonConvert.SerializeObject(null) }
-                                    });
+                                                        Target = "basket",
+                                                        UserId = userId.ToString(),
+                                                         Arguments = new[] { JsonConvert.SerializeObject(null) }
+                                                        });
 
-                returnValue = new OkObjectResult(null);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Exception thrown: {ex.Message}");
-                returnValue = new StatusCodeResult(StatusCodes.Status500InternalServerError);
-            }
-
-
-            return returnValue;
+                    return new OkResult();
+            }, _logger);            
         }   
     }
 }

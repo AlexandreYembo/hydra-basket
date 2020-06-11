@@ -1,50 +1,38 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
+using Hydra.Basket.Function.Authentication;
+using Hydra.Basket.Function.Infrastructure;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Azure.WebJobs.Extensions.SignalRService;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using MongoDB.Driver;
 using Newtonsoft.Json;
 
 namespace Hydra.Basket.Function.Functions
 {
     public class GetBasket
     {
-        private readonly MongoClient _mongoClient;
         public readonly ILogger _logger;
-        private readonly IConfiguration _config;
 
-         public readonly IMongoCollection<Models.Basket> _collection;
+        private readonly IMongoBase _mongoBase;
 
-        public GetBasket(
-            MongoClient mongoClient,
-            ILogger<GetBasket> logger,
-            IConfiguration config)
-        {
-            _mongoClient = mongoClient;
+        private readonly IWebJobAuthorizeHelper _authorize;
+        public GetBasket(IMongoBase mongoBase, ILogger<GetBasket> logger, IWebJobAuthorizeHelper authorize){
+            _mongoBase = mongoBase;
             _logger = logger;
-            _config = config;
-
-            var database = _mongoClient.GetDatabase("HydraBasket");
-            _collection = database.GetCollection<Models.Basket>("Basket");
+            _authorize = authorize;
         }
 
         [FunctionName("GetBasket")]
-        public async Task<IActionResult> Run(
+        public async Task<IActionResult> Get(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req,
             [SignalR(HubName="basket")] IAsyncCollector<SignalRMessage> signalRMessage)
         {
-            IActionResult returnValue = null;
-            Guid userId = Guid.Parse(req.QueryString.Value.Replace("?UserId=", "")); // TODO
-            try
-            {
-              Models.Basket basket = _collection.Find(s => s.UserId == userId).FirstOrDefault();
+            return await this.TryCatch(async () => {
+                string userId = _authorize.GetUserId(req);
+                Models.Basket basket = _mongoBase.Find(Guid.Parse(userId));
 
                 await signalRMessage.AddAsync(
                                     new SignalRMessage {
@@ -53,16 +41,8 @@ namespace Hydra.Basket.Function.Functions
                                             Arguments = new[] { JsonConvert.SerializeObject(basket) }
                                     });
 
-                returnValue = new OkObjectResult(basket);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Exception thrown: {ex.Message}");
-                returnValue = new StatusCodeResult(StatusCodes.Status500InternalServerError);
-            }
-
-
-            return returnValue;
+                return new OkObjectResult(basket);
+            }, _logger);
         }   
     }
 }

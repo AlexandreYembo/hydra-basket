@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using Hydra.Basket.Function;
+using Hydra.Basket.Function.Authentication;
+using Hydra.Basket.Function.Infrastructure;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -20,10 +22,13 @@ namespace Hydra.Basket.Function
                 loggingBuilder.AddFilter(level => true);
             });
 
+            builder.Services.AddSingleton<IMongoBase, MongoBase>();
+            builder.Services.AddTransient<IWebJobAuthorizeHelper, WebJobAuthorizeHelper>();
+
             string mongConn = Environment.GetEnvironmentVariable("MongoConnection");
             builder.Services.AddSingleton((s) =>
             {
-                MongoClient client = new MongoClient(mongConn);
+                IMongoClient client = new MongoClient(mongConn);
 
                 return client;
             });
