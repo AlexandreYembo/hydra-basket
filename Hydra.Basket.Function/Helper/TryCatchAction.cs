@@ -19,6 +19,7 @@ namespace Hydra.Basket.Function
             }
             catch(Exception ex){
                  logger.LogError($"Exception thrown: {ex.Message}");
+                 return new StatusCodeResult(StatusCodes.Status500InternalServerError);
             }
         }
     }
