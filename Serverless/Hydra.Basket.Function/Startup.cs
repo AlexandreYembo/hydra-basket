@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Hydra.Basket.Function;
 using Hydra.Basket.Function.Authentication;
+using Hydra.Basket.Function.Helper;
 using Hydra.Basket.Function.Infrastructure;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;

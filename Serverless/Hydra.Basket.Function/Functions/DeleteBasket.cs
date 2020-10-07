@@ -30,19 +30,17 @@ namespace Hydra.Basket.Function.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "delete")] HttpRequest req,
             [SignalR(HubName="basket")] IAsyncCollector<SignalRMessage> signalRMessage)
         {
-            return await this.TryCatch(async () => {
-                    string userId = _authorize.GetUserId(req);
-                    _mongoBase.Delete(Guid.Parse(userId));
+            string userId = _authorize.GetUserId(req);
+            _mongoBase.Delete(Guid.Parse(userId));
 
-                    await signalRMessage.AddAsync(
-                                    new SignalRMessage {
-                                                        Target = "basket",
-                                                        UserId = userId.ToString(),
-                                                         Arguments = new[] { JsonConvert.SerializeObject(null) }
-                                                        });
+            await signalRMessage.AddAsync(
+                new SignalRMessage {
+                    Target = "basket",
+                    UserId = userId.ToString(),
+                    Arguments = new[] { JsonConvert.SerializeObject(null) }
+                });
 
-                    return new OkResult();
-            }, _logger);            
+            return new OkResult();
         }   
     }
 }

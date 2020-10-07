@@ -30,19 +30,17 @@ namespace Hydra.Basket.Function.Functions
             [HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest req,
             [SignalR(HubName="basket")] IAsyncCollector<SignalRMessage> signalRMessage)
         {
-            return await this.TryCatch(async () => {
-                string userId = _authorize.GetUserId(req);
-                Models.Basket basket = _mongoBase.Find(Guid.Parse(userId));
+            string userId = _authorize.GetUserId(req);
+            Models.Basket basket = _mongoBase.Find(Guid.Parse(userId));
 
-                await signalRMessage.AddAsync(
-                                    new SignalRMessage {
-                                            Target = "basket",
-                                            UserId = userId.ToString(),
-                                            Arguments = new[] { JsonConvert.SerializeObject(basket) }
-                                    });
+            await signalRMessage.AddAsync(
+                new SignalRMessage {
+                    Target = "basket",
+                    UserId = userId.ToString(),
+                    Arguments = new[] { JsonConvert.SerializeObject(basket) }
+                });
 
-                return new OkObjectResult(basket);
-            }, _logger);
+            return new OkObjectResult(basket);
         }   
     }
 }
