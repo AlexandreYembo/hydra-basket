@@ -5,3 +5,6 @@
 .vscode/extensions.json
 .DS_Store
 .vscode
+bin/
+obj/
+dotnet3.1/Hydra.Basket.API/Properties/launchSettings.json
