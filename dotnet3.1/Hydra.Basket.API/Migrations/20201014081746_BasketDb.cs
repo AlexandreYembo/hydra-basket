@@ -13,7 +13,7 @@ namespace Hydra.Basket.API.Migrations
                 {
                     Id = table.Column<Guid>(nullable: false),
                     CustomerId = table.Column<Guid>(nullable: false),
-                    TotalPrice = table.Column<Guid>(nullable: false)
+                    TotalPrice = table.Column<decimal>(nullable: false)
                 },
                 constraints: table =>
                 {
@@ -26,10 +26,10 @@ namespace Hydra.Basket.API.Migrations
                 {
                     Id = table.Column<Guid>(nullable: false),
                     ProductId = table.Column<Guid>(nullable: false),
-                    Name = table.Column<Guid>(nullable: false),
-                    Qty = table.Column<Guid>(nullable: false),
-                    Price = table.Column<Guid>(nullable: false),
-                    Image = table.Column<Guid>(nullable: false),
+                    Name = table.Column<string>(type: "varchar(100)", nullable: true),
+                    Qty = table.Column<int>(nullable: false),
+                    Price = table.Column<decimal>(nullable: false),
+                    Image = table.Column<string>(type: "varchar(100)", nullable: true),
                     BasketId = table.Column<Guid>(nullable: false)
                 },
                 constraints: table =>

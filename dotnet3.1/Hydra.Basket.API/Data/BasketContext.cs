@@ -1,4 +1,5 @@
 using System.Linq;
+using FluentValidation.Results;
 using Hydra.Basket.API.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,6 +17,8 @@ namespace Hydra.Basket.API.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Ignore<ValidationResult>();
+            
             foreach (var property in modelBuilder.Model.GetEntityTypes().SelectMany(
                 e => e.GetProperties().Where(p => p.ClrType == typeof(string))))
                 property.SetColumnType("varchar(100)");

@@ -10,7 +10,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Hydra.Basket.API.Migrations
 {
     [DbContext(typeof(BasketContext))]
-    [Migration("20201013222018_BasketDb")]
+    [Migration("20201014081746_BasketDb")]
     partial class BasketDb
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -30,8 +30,8 @@ namespace Hydra.Basket.API.Migrations
                     b.Property<Guid>("CustomerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("TotalPrice")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -50,20 +50,20 @@ namespace Hydra.Basket.API.Migrations
                     b.Property<Guid>("BasketId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("Image")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("Image")
+                        .HasColumnType("varchar(100)");
 
-                    b.Property<Guid>("Name")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<string>("Name")
+                        .HasColumnType("varchar(100)");
 
-                    b.Property<Guid>("Price")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("Qty")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("Qty")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

@@ -1,4 +1,5 @@
 using System;
+using Hydra.Basket.API.Validations;
 
 namespace Hydra.Basket.API.Models
 {
@@ -11,11 +12,21 @@ namespace Hydra.Basket.API.Models
 
         public Guid Id { get; set; }
         public Guid ProductId { get; set; }
-        public Guid Name { get; set; }
-        public Guid Qty { get; set; }
-        public Guid Price { get; set; }
-        public Guid Image { get; set; }
+        public string Name { get; set; }
+        public int Qty { get; set; }
+        public decimal Price { get; set; }
+        public string Image { get; set; }
         public Guid BasketId { get; set; }
         public BasketCustomer BasketCustomer { get; set; }
+
+        internal void AddBasket(Guid basketId) => BasketId = basketId;
+
+        internal decimal CalculatePrice() => Price * Qty;
+
+        internal void AddQty(int qty) => Qty += qty;
+
+        internal void UpdateQty(int qty) => Qty = qty;
+
+        internal bool IsValid() => new BasketItemValidation().Validate(this).IsValid;
     }
 }
