@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 using Hydra.Basket.API.Validations;
 
 namespace Hydra.Basket.API.Models
@@ -17,6 +18,8 @@ namespace Hydra.Basket.API.Models
         public decimal Price { get; set; }
         public string Image { get; set; }
         public Guid BasketId { get; set; }
+       
+       [JsonIgnore]
         public BasketCustomer BasketCustomer { get; set; }
 
         internal void AddBasket(Guid basketId) => BasketId = basketId;
