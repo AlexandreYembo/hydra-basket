@@ -1,8 +1,8 @@
 using System;
 using FluentValidation;
-using Hydra.Basket.API.Models;
+using Hydra.Basket.Domain.Entities;
 
-namespace Hydra.Basket.API.Validations
+namespace Hydra.Basket.Domain.Validations
 {
     public class BasketCustomerValidation : AbstractValidator<BasketCustomer>
     {

@@ -1,14 +1,13 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using Hydra.Basket.API.Data;
-using Hydra.Basket.API.Models;
+using Hydra.Basket.Domain.Entities;
+using Hydra.Basket.Domain.Repositories;
 using Hydra.WebAPI.Core.Controllers;
 using Hydra.WebAPI.Core.Identity;
 using Hydra.WebAPI.Core.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Hydra.Basket.API.Controllers
 {
@@ -16,13 +15,12 @@ namespace Hydra.Basket.API.Controllers
     public class BasketController : MainController
     {
         private readonly IAspNetUser _user;
-        private readonly BasketContext _context;
+        private readonly IBasketRepository _repository;
 
-
-        public BasketController(IAspNetUser user, BasketContext context)
+        public BasketController(IAspNetUser user, IBasketRepository repository)
         {
             _user = user;
-            _context = context;
+            _repository = repository;
         }
 
         [HttpGet("basket")]
@@ -37,13 +35,11 @@ namespace Hydra.Basket.API.Controllers
            var basket = await GetBasketCustomerAsync();
 
             if(basket == null)
-                SaveNewBasket(item);
+                await SaveNewBasket(item);
             else
-                UpdateExistingBasket(basket, item); //TODO update
+                await UpdateExistingBasket(basket, item); //TODO update
 
             if(!ValidOperation()) return CustomResponse();
-
-            await PersistData();
         
             return CustomResponse();
         }
@@ -53,7 +49,7 @@ namespace Hydra.Basket.API.Controllers
         public async Task<IActionResult> UpdateItemBasket(Guid productId, BasketItem item)
         {
             var basket = await GetBasketCustomerAsync();
-            var basketItem = await GetBasketItem(productId, basket, item);
+            var basketItem = GetBasketItem(productId, basket, item);
 
             if(basketItem == null) return CustomResponse();
 
@@ -62,10 +58,7 @@ namespace Hydra.Basket.API.Controllers
             ValidateBasket(basket);
             if(!ValidOperation()) return CustomResponse();
 
-            _context.BasketItems.Update(basketItem);
-            _context.BasketCustomers.Update(basket);
-            
-            await PersistData();
+            await _repository.Save(basket);
 
             return CustomResponse();
         }
@@ -75,7 +68,7 @@ namespace Hydra.Basket.API.Controllers
         public async Task<IActionResult> DeleteItemBasket(Guid productId)
         {
             var basket = await GetBasketCustomerAsync();
-            var basketItem = await GetBasketItem(productId, basket);
+            var basketItem = GetBasketItem(productId, basket);
 
             if(basketItem == null) return CustomResponse();
         
@@ -84,45 +77,44 @@ namespace Hydra.Basket.API.Controllers
 
             basket.RemoveItem(basketItem);
         
-            _context.BasketItems.Remove(basketItem);
-            _context.BasketCustomers.Update(basket);
+            await _repository.Save(basket);
 
-            await PersistData();
+            return CustomResponse();
+        }
+
+        [HttpPost]
+        [Route("basket/apply-voucher")]
+        public async Task<IActionResult> ApplyVoucher(Voucher voucher)
+        {
+            var basket = await GetBasketCustomerAsync();
+
+            basket.ApplyVoucher(voucher);
+
+            await _repository.Save(basket);
             return CustomResponse();
         }
 
         private async Task<BasketCustomer> GetBasketCustomerAsync() =>
-             await _context.BasketCustomers
-                            .Include(c => c.Items)
-                            .FirstOrDefaultAsync(c => c.CustomerId == _user.GetUserId());
+             await _repository.GetByCustomerId(_user.GetUserId());
 
-        private void SaveNewBasket(BasketItem item)
+        private async Task SaveNewBasket(BasketItem item)
         {
             var basket = new BasketCustomer(_user.GetUserId());
             basket.AddItem(item);
 
-            ValidateBasket(basket);
+            if(!ValidateBasket(basket)) return;
 
-            _context.BasketCustomers.Add(basket);
+            await _repository.Save(basket);
         }
-        private void UpdateExistingBasket(BasketCustomer basket, BasketItem item)
+        private async Task UpdateExistingBasket(BasketCustomer basket, BasketItem item)
         {
-            var existingItem = basket.ExistingItem(item);
             basket.AddItem(item);
             
-            ValidateBasket(basket);
-
-            if(existingItem){
-                _context.BasketItems.Update(basket.GetItemByProductId(item.ProductId));
-            }
-            else{
-                _context.BasketItems.Add(item);
-            }
-
-            _context.BasketCustomers.Update(basket);            
+            if(!ValidateBasket(basket)) return;
+            await _repository.Save(basket);
         }
 
-        private async Task<BasketItem> GetBasketItem(Guid productId, BasketCustomer basket, BasketItem item = null)
+        private BasketItem GetBasketItem(Guid productId, BasketCustomer basket, BasketItem item = null)
         {
             if(item != null && productId != item.ProductId)
             {
@@ -136,7 +128,7 @@ namespace Hydra.Basket.API.Controllers
                 return null;
             }
 
-            var basketItem = await _context.BasketItems.FirstOrDefaultAsync(f => f.BasketId == basket.Id && f.ProductId == productId);
+            var basketItem = basket.Items.FirstOrDefault(f => f.BasketId == basket.Id && f.ProductId == productId);
 
             if(basketItem == null || !basket.ExistingItem(basketItem))
             {
@@ -145,12 +137,6 @@ namespace Hydra.Basket.API.Controllers
             }
 
             return basketItem;
-        }
-
-        private async Task PersistData()
-        {
-            var result = await _context.SaveChangesAsync();
-            if (result <= 0) AddErrors("There was an error to save the data");
         }
 
         private bool ValidateBasket(BasketCustomer basket)

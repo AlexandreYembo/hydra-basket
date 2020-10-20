@@ -1,8 +1,8 @@
 using System;
 using System.Text.Json.Serialization;
-using Hydra.Basket.API.Validations;
+using Hydra.Basket.Domain.Validations;
 
-namespace Hydra.Basket.API.Models
+namespace Hydra.Basket.Domain.Entities
 {
     public class BasketItem
     {

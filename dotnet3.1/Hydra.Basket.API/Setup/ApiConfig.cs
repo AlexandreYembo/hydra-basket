@@ -1,8 +1,7 @@
-using Hydra.Basket.API.Data;
+using Hydra.Core.Extensions;
 using Hydra.WebAPI.Core.Identity;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,9 +12,11 @@ namespace Hydra.Basket.API.Setup
     {
         public static void AddApiConfiguration(this IServiceCollection services, IConfiguration configuration)
         {
-           services.AddDbContext<BasketContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
-
             services.AddControllers();
+
+            services.AddDistributedRedisCache(option => {
+                 option.Configuration = configuration.GetRedisConnection("ConnectionString");
+            });
 
             services.AddCors(options =>{
                 options.AddPolicy("Basket", builder =>

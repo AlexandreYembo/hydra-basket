@@ -1,4 +1,5 @@
-using Hydra.Basket.API.Data;
+using Hydra.Basket.Domain.Repositories;
+using Hydra.Basket.Infrastructure.Repository;
 using Hydra.WebAPI.Core.User;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,8 @@ namespace Hydra.Basket.API.Setup
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.AddScoped<IAspNetUser, AspNetUser>();
-            services.AddScoped<BasketContext>();
+
+            services.AddScoped<IBasketRepository, BasketRepository>();
         }
     }
 }
