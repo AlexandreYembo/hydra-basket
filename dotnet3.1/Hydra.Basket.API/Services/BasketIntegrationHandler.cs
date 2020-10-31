@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Hydra.Basket.Infrastructure.Repository;
+using Hydra.Basket.Domain.Repositories;
 using Hydra.Core.Integration.Messages.OrderMessages;
 using Hydra.Core.MessageBus;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,9 +33,9 @@ namespace Hydra.Basket.API.Services
         private async Task RemoveBasket(OrderStartedIntegrationEvent message)
         {
             using var scope = _serviceProvider.CreateScope();
-            var repository = scope.ServiceProvider.GetRequiredService<BasketRepository>();
-
-            var basket = repository.GetByCustomerId(message.CustomerId);
+            var repository = scope.ServiceProvider.GetRequiredService<IBasketRepository>();
+ 
+            var basket = await repository.GetByCustomerId(message.CustomerId);
 
             if(basket != null)
             {
