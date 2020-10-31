@@ -3,8 +3,7 @@ namespace Hydra.Basket.Domain.Entities
     public class Voucher
     {
         public string Code { get; set; }
-        public decimal? DiscountPercentage { get; set; }
-        public decimal? DiscountPrice { get; set; }
+        public decimal? Discount { get; set; }
         public VoucherDiscountType DiscountType { get; set; }
     }
 

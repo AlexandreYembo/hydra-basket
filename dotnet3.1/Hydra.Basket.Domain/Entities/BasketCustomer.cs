@@ -18,8 +18,8 @@ namespace Hydra.Basket.Domain.Entities
        [JsonIgnore]
         public ValidationResult ValidationResult { get; set; }
 
-        public bool UsedVoucher { get; set; }
-        public decimal DiscountApplied { get; set; }
+        public bool HasVoucher { get; set; }
+        public decimal Discount { get; set; }
 
         public Voucher Voucher { get; set; }
        
@@ -38,30 +38,30 @@ namespace Hydra.Basket.Domain.Entities
 
         private void CalculateTotalPriceDiscount()
         {
-            if(!UsedVoucher) return;
+            if(!HasVoucher) return;
 
             decimal discount = 0;
             var price = TotalPrice;
 
             if(Voucher.DiscountType == VoucherDiscountType.Percentage)
             {
-                if(Voucher.DiscountPercentage.HasValue)
+                if(Voucher.Discount.HasValue)
                 {
-                    discount = (price * Voucher.DiscountPercentage.Value) / 100;
+                    discount = (price * Voucher.Discount.Value) / 100;
                 }
             }
             else
             {
-                if(Voucher.DiscountPrice.HasValue)
+                if(Voucher.Discount.HasValue)
                 {
-                    discount = Voucher.DiscountPrice.Value;
+                    discount = Voucher.Discount.Value;
                 }
             }
 
             price -= discount;
 
             TotalPrice = price < 0 ? 0 : price;
-            DiscountApplied = discount;
+            Discount = discount;
         }
 
         public bool ExistingItem(BasketItem item) => Items.Any(a => a.ProductId == item.ProductId);
@@ -121,7 +121,7 @@ namespace Hydra.Basket.Domain.Entities
         public void ApplyVoucher(Voucher voucher)
         {
             Voucher = voucher;
-            UsedVoucher = true;
+            HasVoucher = true;
             CalculateTotalPriceBasket();
         }
     }
