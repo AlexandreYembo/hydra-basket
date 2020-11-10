@@ -31,4 +31,4 @@ If you are developing your project gRPC under another Operation system such MacO
                         });
                      }
 ```
-###### This should not be used in production deployment, only for development and test propose. Also including this line will break others request such HttpClient, so beware that using this solution is only to call gRPC functions, but in case that you need to test Rest API rather than gRPC, you have to get rid of this solution.
+###### This should not be used in production deployment, only for development and test propose. Also including this line will break other requests such HttpClient, so beware that using this solution is only to call gRPC functions, but in case that you need to test Rest API rather than gRPC, you have to get rid of this solution.
