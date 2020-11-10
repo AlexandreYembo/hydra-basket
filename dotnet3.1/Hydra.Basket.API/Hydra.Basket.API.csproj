@@ -7,11 +7,15 @@
     <ProjectReference Include="..\..\hydra-core\dotnet3.1\Hydra.Core.MessageBus\Hydra.Core.MessageBus.csproj" />
   </ItemGroup>
   <ItemGroup>
+   <PackageReference Include="Grpc.AspNetCore" Version="2.33.1" />
    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.1.4" />
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
-
-
+  
+  <ItemGroup>
+    <!-- During the compilation, it will generate the base of the client -->
+		<Protobuf Include="Protos\basket.proto" GrpcServices="Server" />
+	</ItemGroup>
 </Project>

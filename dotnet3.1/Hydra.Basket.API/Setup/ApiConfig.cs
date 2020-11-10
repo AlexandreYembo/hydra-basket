@@ -1,3 +1,4 @@
+using Hydra.Basket.API.Services.gRPC;
 using Hydra.Core.Extensions;
 using Hydra.WebAPI.Core.Identity;
 using Microsoft.AspNetCore.Builder;
@@ -13,6 +14,8 @@ namespace Hydra.Basket.API.Setup
         public static void AddApiConfiguration(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddControllers();
+
+            services.AddGrpc();
 
             services.AddDistributedRedisCache(option => {
                  option.Configuration = configuration.GetRedisConnection("ConnectionString");
@@ -44,6 +47,8 @@ namespace Hydra.Basket.API.Setup
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapGrpcService<BasketGrpcService>()
+                         .RequireCors("Basket");
             });
         }
     }

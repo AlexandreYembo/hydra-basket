@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option csharp_namespace = "Hydra.Basket.API.Services.gRPC";
+
+package BasketAPI;
+
+service Basket {
+    rpc GetBasket(GetBasketRequest) returns (BasketCustomerResponse) {}
+}
+
+message GetBasketRequest {
+
+}
+
+message BasketCustomerResponse {
+    string id = 1;
+    string customerid = 2;
+    double totalprice = 3;
+    // items -> repated used for list
+    repeated BasketItemResponse items = 4;
+    bool hasvoucher = 5;
+    double discount = 6;
+    //voucher
+    VoucherResponse voucher = 7;
+}
+
+message BasketItemResponse {
+    string id = 1;
+    string productdd = 2;
+    string name = 3;
+    int32 qty = 4;
+    double price = 5;
+    string image = 6;
+}
+
+message VoucherResponse {
+    string code = 1;
+    double discount = 2;
+    int32 discounttype = 3;
+}
