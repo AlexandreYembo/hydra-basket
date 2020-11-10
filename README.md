@@ -20,7 +20,7 @@ In the csProject there is a specific key:
 gRPC does not support to run in IIS, so you should run as SelfHosting.
 
 ##### Important:
-If you are developing your project gRPC under another Operation system such MacOS, it will need to do few adjusts on the project, because I have stroggled few hours to figured out how to fix the error related to HTTP 2.0 communication error. You can add this code on the ```Program.cs``` file:
+If you are developing your project gRPC under another Operation system such MacOS, You will need to do few adjusts on the project, because I have stroggled few hours to figured out how to fix the error related to HTTP 2.0 communication error. You can add this code on the ```Program.cs``` file:
 ```cs
    if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
                         webBuilder.ConfigureKestrel(options =>
